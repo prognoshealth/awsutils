@@ -33,6 +33,25 @@ type SNSLock struct {
 	svcFunc func(client.ConfigProvider) dynamodbiface.DynamoDBAPI
 }
 
+// NewSNSLock returns a new sns lock instance to manage dynamodb locking
+func NewSNSLock(region string, table string, ttl int64, retry int64) *SNSLock {
+	lock := new(SNSLock)
+	lock.Region = region
+	lock.Table = table
+	lock.TTL = ttl
+	lock.RetryWait = retry
+
+	if lock.TTL == 0 {
+		lock.TTL = 300
+	}
+
+	if lock.RetryWait == 0 {
+		lock.RetryWait = 500
+	}
+
+	return lock
+}
+
 // NewSNSLockFromJson returns a new sns lock instance to manage dynamodb locking
 func NewSNSLockFromJson(s string) (*SNSLock, error) {
 	lock := new(SNSLock)

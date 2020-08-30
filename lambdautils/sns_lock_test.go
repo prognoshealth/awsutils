@@ -16,6 +16,28 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
+func TestNewSNSLock(t *testing.T) {
+	cases := []struct {
+		ttl               int64
+		retry             int64
+		expectedTTL       int64
+		expectedRetryWait int64
+	}{
+		{15, 30, 15, 30},
+		{15, 0, 15, 500},
+		{0, 30, 300, 30},
+	}
+
+	for _, c := range cases {
+		l := NewSNSLock("r", "t", c.ttl, c.retry)
+
+		assert.Equal(t, "r", l.Region)
+		assert.Equal(t, "t", l.Table)
+		assert.Equal(t, c.expectedTTL, l.TTL)
+		assert.Equal(t, c.expectedRetryWait, l.RetryWait)
+	}
+}
+
 func TestNewSNSLockFromJson(t *testing.T) {
 	cases := []struct {
 		json              string

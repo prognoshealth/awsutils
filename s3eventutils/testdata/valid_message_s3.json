@@ -1,0 +1,38 @@
+{
+    "Records": [
+        {
+            "eventVersion": "2.0",
+            "eventSource": "aws:s3",
+            "awsRegion": "us-east-1",
+            "eventTime": "2018-07-12T16:26:25.733Z",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "AWS:AIXXXAJOTYYTT5JSJJ7"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "78.89.155.93"
+            },
+            "responseElements": {
+                "x-amz-request-id": "2FE8E6443368DC21",
+                "x-amz-id-2": "b+QaJ1u/zE9PHerefLdpBmlWEDgMR+yL6mnDkOCPdfdKWRzPlUW0FsLLNB4p4RYznq/U6Y="
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "Armadillo-Incoming-Event",
+                "bucket": {
+                    "name": "bktname",
+                    "ownerIdentity": {
+                        "principalId": "A1UXYK43UII3W"
+                    },
+                    "arn": "arn:aws:s3:::bktname"
+                },
+                "object": {
+                    "key": "some/file/in/s3.txt",
+                    "size": 1202,
+                    "eTag": "f81ea34505f2bd6e9131072351093e20",
+                    "sequencer": "006C478131BB3BA14A"
+                }
+            }
+        }
+    ]
+}

@@ -1,4 +1,4 @@
-package lambdautils
+package s3eventutils
 
 import (
 	"testing"

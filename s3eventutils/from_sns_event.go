@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -40,6 +41,10 @@ func UriFromSNSS3EventMessage(snsEvent events.SNSEvent) (string, error) {
 	}
 
 	uri := fmt.Sprintf("s3://%s", path.Join(b, k))
+
+	if strings.HasSuffix(k, "/") {
+		uri = uri + "/"
+	}
 
 	return uri, nil
 }

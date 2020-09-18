@@ -78,6 +78,17 @@ func TestUriFromSNSS3EventMessage(t *testing.T) {
 	assert.Equal(t, "s3://bktname/some/file/in/s3.txt", uri)
 }
 
+func TestUriFromSNSS3EventMessage_folder(t *testing.T) {
+	b, err := ioutil.ReadFile("testdata/valid_message_s3_folder.json")
+	assert.NoError(t, err)
+
+	snsEvent := createSNSEvent(createSNSRecord(string(b)))
+
+	uri, err := UriFromSNSS3EventMessage(snsEvent)
+	assert.NoError(t, err)
+	assert.Equal(t, "s3://bktname/some/file/in/folder/", uri)
+}
+
 func TestUriFromSNSS3EventMessage_error(t *testing.T) {
 	snsEvent := createSNSEvent(createSNSRecord("not json"))
 

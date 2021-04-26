@@ -13,13 +13,6 @@ import (
 // request when the route is matched.
 type RouteHandler func(*RouteContext) (events.APIGatewayProxyResponse, error)
 
-// RouteContext contains all the request information for a route when matched.
-type RouteContext struct {
-	Context context.Context
-	Request events.APIGatewayV2HTTPRequest
-	Params  map[string]string
-}
-
 // Route defines a HttpMethod and Regex that are used in combination for
 // matching against an incoming request. When a match occurs the configured
 // handler is called.

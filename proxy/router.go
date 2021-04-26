@@ -173,11 +173,7 @@ func (router *Router) AddErrorHandler(handler ErrorHandler) {
 // If there is no catch all handler and no route is matched an error is returned.
 func (router *Router) routeInternal(ctx context.Context, request events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResponse, error) {
 	for _, route := range router.Routes {
-		fmt.Printf("route: %v", route)
-
 		matched, groups := route.IsMatch(request)
-
-		fmt.Printf("matched: %v groups: %v", matched, groups)
 
 		if !matched {
 			continue

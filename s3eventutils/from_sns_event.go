@@ -11,9 +11,9 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-// s3EventRecordFromSNSWrapper extracts the underlying s3 event record wrapped
+// S3EventRecordFromSNSWrapper extracts the underlying s3 event record wrapped
 // within the sns event.
-func s3EventRecordFromSNSWrapper(snsEvent events.SNSEvent) (*events.S3EventRecord, error) {
+func S3EventRecordFromSNSWrapper(snsEvent events.SNSEvent) (*events.S3EventRecord, error) {
 	if len(snsEvent.Records) != 1 {
 		return nil, errors.New(fmt.Sprintf("expected only 1 SNS event, received: %v", len(snsEvent.Records)))
 	}
@@ -52,7 +52,7 @@ func UriFromSNSS3EventMessage(snsEvent events.SNSEvent) (string, error) {
 // S3ObjectFromSNSS3EventMessage extracts the bucket and key from an s3 event wrapped
 // sns event.
 func S3ObjectFromSNSS3EventMessage(snsEvent events.SNSEvent) (string, string, error) {
-	record, err := s3EventRecordFromSNSWrapper(snsEvent)
+	record, err := S3EventRecordFromSNSWrapper(snsEvent)
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed unwrapping s3 event record from sns")
 	}

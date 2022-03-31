@@ -16,13 +16,13 @@ type ErrorHandler func(context.Context, events.APIGatewayV2HTTPRequest, error) (
 // request that doesn't match a route.
 type CatchAllHandler func(context.Context, events.APIGatewayV2HTTPRequest) (events.APIGatewayProxyResponse, error)
 
-// Router will route an incoming events.APIGatewayV2HTTPRequest the appropriate
+// Router will route an incoming events.APIGatewayV2HTTPRequest to the appropriate
 // route based upon the router configuration and then return the
 // events.APIGatewayProxyResponse.
 //
 // Route matching is a simple process that loops through all routes added in the
-// order they were added and checks if a match is present. If so that route gets
-// executed, otherwise it moves onto the next route for comparison.
+// order they were configured and checks if a match is present. If so that route
+// gets executed, otherwise it moves onto the next route for comparison.
 //
 // If the CatchAll handler is set any request that doesn't match a route will be
 // handled by it.

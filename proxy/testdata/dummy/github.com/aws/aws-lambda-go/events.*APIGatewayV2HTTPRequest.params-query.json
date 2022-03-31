@@ -1,0 +1,66 @@
+{
+  "version": "2.0",
+  "routeKey": "GET /wowza",
+  "rawPath": "/wowza",
+  "rawQueryString": "jones=arm&whoop=poor",
+  "headers": {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "accept-encoding": "gzip, deflate, br",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "max-age=0",
+    "content-length": "24",
+    "content-type": "application/x-www-form-urlencoded",
+    "host": "devevan-api.pf.prognos.dev",
+    "origin": "http://localhost:3000",
+    "referer": "http://localhost:3000/",
+    "sec-ch-ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"99\", \"Google Chrome\";v=\"99\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"macOS\"",
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "cross-site",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36",
+    "x-amzn-trace-id": "Root=1-1111-111111",
+    "x-forwarded-for": "1.1.1.1",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "queryStringParameters": {
+    "jones": "arm",
+    "whoop": "poor"
+  },
+  "requestContext": {
+    "routeKey": "GET /wowza",
+    "accountId": "111111",
+    "stage": "$default",
+    "requestId": "PxxoehGYCYcDJdg=",
+    "apiId": "bg8cszttl7",
+    "domainName": "devevan-api.pf.prognos.dev",
+    "domainPrefix": "devevan-api",
+    "time": "31/Mar/2022:18:41:10 +0000",
+    "timeEpoch": 1648662030066,
+    "http": {
+      "method": "GET",
+      "path": "/wowza",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "1.1.1.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36"
+    },
+    "authentication": {
+      "clientCert": {
+        "clientCertPem": "",
+        "issuerDN": "",
+        "serialNumber": "",
+        "subjectDN": "",
+        "validity": {
+          "notAfter": "",
+          "notBefore": ""
+        }
+      }
+    }
+  },
+  "body": "hi",
+  "isBase64Encoded": false
+}

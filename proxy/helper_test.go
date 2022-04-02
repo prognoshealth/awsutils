@@ -28,7 +28,7 @@ func testRequest(method HttpMethod, path string) events.APIGatewayV2HTTPRequest 
 
 func dummyNamespace(v interface{}) string {
 	if t := reflect.TypeOf(v); t.Kind() == reflect.Ptr {
-		return fmt.Sprintf("%s.*%s", t.Elem().PkgPath(), t.Elem().Name())
+		return fmt.Sprintf("%s.p%s", t.Elem().PkgPath(), t.Elem().Name())
 	} else {
 		return fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
 	}

@@ -6,28 +6,31 @@ on:
     branches:
       - master
   pull_request:
-  
+
 jobs:
   test:
     name: Unit Tests and Coverage
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.15
-
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
 
       - name: Run Unit tests.
-        run: | 
+        run: |
           go test -v -coverprofile c.out ./...
           pwd
           ls -al
 
       - name: Send Coverage
-        uses: paambaati/codeclimate-action@v2.6.0
+        uses: paambaati/codeclimate-action@v8.0.0
         with:
           coverageCommand: echo "already covered"
           coverageLocations: ${{github.workspace}}/c.out:gocov
@@ -37,9 +40,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.30
+          version: "latest"

@@ -1,0 +1,18 @@
+{
+    "EventVersion": "1.0",
+    "EventSubscriptionArn": "arn:aws:sns:REGION:ACCOUNT_ID:SUBSCRIPTION_ID",
+    "EventSource": "aws:sns",
+    "Sns": {
+        "Signature": "SIGNATURE_PLACEHOLDER",
+        "MessageId": "MESSAGE_ID_PLACEHOLDER",
+        "Type": "Notification",
+        "TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:TOPIC_NAME",
+        "MessageAttributes": {},
+        "SignatureVersion": "1",
+        "Timestamp": "2024-09-12T12:00:00Z",
+        "SigningCertUrl": "CERT_URL_PLACEHOLDER",
+        "Message": "{\"name\":\"SomeMessageName\"}",
+        "UnsubscribeUrl": "UNSUBSCRIBE_URL_PLACEHOLDER",
+        "Subject": "SUBJECT_PLACEHOLDER"
+    }
+}

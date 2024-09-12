@@ -1,8 +1,10 @@
 package lambdautils
 
 import (
+	"crypto/sha256"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -82,7 +84,28 @@ func TestNewSNSLockFromJson_errorTable(t *testing.T) {
 }
 
 func TestSNSLock_messageHash(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_sns_event.json")
+	b, err := os.ReadFile("testdata/valid_sns_string_event.json")
+	assert.NoError(t, err)
+
+	snsEventRecord := &events.SNSEventRecord{}
+	assert.NoError(t, json.Unmarshal(b, snsEventRecord))
+
+	snsEvent := events.SNSEvent{
+		Records: []events.SNSEventRecord{
+			*snsEventRecord,
+		},
+	}
+
+	l := &SNSLock{}
+
+	expected := "d2837a5c7d52bf9f472b16bd851d6c09579a80fe5e4fbf293a988c117ee90bb0"
+	actual, err := l.messageHash(snsEvent)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestSNSLock_messageHash_json(t *testing.T) {
+	b, err := os.ReadFile("testdata/valid_sns_json_event.json")
 	assert.NoError(t, err)
 
 	snsEventRecord := &events.SNSEventRecord{}
@@ -97,7 +120,47 @@ func TestSNSLock_messageHash(t *testing.T) {
 	l := &SNSLock{}
 
 	expected := "7dfaa4af204fccecf31a47d8d10d60194776670866fe83145cc75a0395f6da75"
-	actual := l.messageHash(snsEvent)
+	actual, err := l.messageHash(snsEvent)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestSNSLock_messageHash_s3(t *testing.T) {
+	b, err := os.ReadFile("testdata/valid_sns_s3_event.json")
+	assert.NoError(t, err)
+
+	snsEventRecord := &events.SNSEventRecord{}
+	assert.NoError(t, json.Unmarshal(b, snsEventRecord))
+
+	snsEvent := events.SNSEvent{
+		Records: []events.SNSEventRecord{
+			*snsEventRecord,
+		},
+	}
+
+	l := &SNSLock{}
+
+	// Set custom hash function for s3Event
+	l.SetHashFunc(func(message string) (string, error) {
+		var s3Event events.S3Event
+		err := json.Unmarshal([]byte(message), &s3Event)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to unmarshal S3 event")
+		}
+
+		if len(s3Event.Records) != 1 {
+			return "", fmt.Errorf("expected only 1 S3 event record, received: %d", len(s3Event.Records))
+		}
+
+		s3Record := s3Event.Records[0]
+		data := s3Record.S3.Bucket.Arn + s3Record.S3.Object.Key + fmt.Sprint(s3Record.S3.Object.Size) + s3Record.S3.Object.ETag
+		sum := sha256.Sum256([]byte(data))
+		return fmt.Sprintf("%x", sum), nil
+	})
+
+	expected := "88c06f58a0517bb46f1e4ce51257d2f320f0f54d4daf69ceabf017ac119e924b"
+	actual, err := l.messageHash(snsEvent)
+	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
 
@@ -183,7 +246,7 @@ func TestSNSLock_AvailableById_error(t *testing.T) {
 }
 
 func TestSNSLock_Available(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_sns_event.json")
+	b, err := os.ReadFile("testdata/valid_sns_string_event.json")
 	assert.NoError(t, err)
 
 	snsEventRecord := &events.SNSEventRecord{}
@@ -204,7 +267,7 @@ func TestSNSLock_Available(t *testing.T) {
 }
 
 func TestSNSLock_Available_errorRecords(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_sns_event.json")
+	b, err := os.ReadFile("testdata/valid_sns_string_event.json")
 	assert.NoError(t, err)
 
 	snsEventRecord := &events.SNSEventRecord{}

@@ -29,8 +29,9 @@ type SNSLock struct {
 	TTL       int64  `json:"ttl"`
 	RetryWait int64  `json:"retry-wait"`
 
-	nowFunc func() time.Time
-	svcFunc func(client.ConfigProvider) dynamodbiface.DynamoDBAPI
+	nowFunc  func() time.Time
+	svcFunc  func(client.ConfigProvider) dynamodbiface.DynamoDBAPI
+	hashFunc func(string) (string, error)
 }
 
 // NewSNSLock returns a new sns lock instance to manage dynamodb locking
@@ -99,10 +100,16 @@ func (lock *SNSLock) svc(p client.ConfigProvider) dynamodbiface.DynamoDBAPI {
 }
 
 // messageHash returns the sha256 of the message embedded in the sns event
-func (lock *SNSLock) messageHash(snsEvent events.SNSEvent) string {
+func (lock *SNSLock) messageHash(snsEvent events.SNSEvent) (string, error) {
 	message := snsEvent.Records[0].SNS.Message
+
+	// If a hash function is provided, use it
+	if lock.hashFunc != nil {
+		return lock.hashFunc(message)
+	}
+
 	sum := sha256.Sum256([]byte(message))
-	return fmt.Sprintf("%x", sum)
+	return fmt.Sprintf("%x", sum), nil
 }
 
 // expires returns the current time + ttl in Epoch format as a string
@@ -194,6 +201,14 @@ func (lock *SNSLock) Available(snsEvent events.SNSEvent) (bool, error) {
 		return false, fmt.Errorf("expected only 1 SNS event, received: %v", len(snsEvent.Records))
 	}
 
-	id := lock.messageHash(snsEvent)
+	id, err := lock.messageHash(snsEvent)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to hash message")
+	}
 	return lock.AvailableById(id)
+}
+
+// SetHashFunc sets the hash function to use for message hashing
+func (lock *SNSLock) SetHashFunc(f func(string) (string, error)) {
+	lock.hashFunc = f
 }

@@ -1,7 +1,7 @@
 package s3eventutils
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -28,7 +28,7 @@ func createSNSRecord(message string) events.SNSEventRecord {
 }
 
 func Test_S3EventRecordFromSNSWrapper(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_message_s3.json")
+	b, err := os.ReadFile("testdata/valid_message_s3.json")
 	assert.NoError(t, err)
 
 	snsEvent := createSNSEvent(createSNSRecord(string(b)))
@@ -41,7 +41,7 @@ func Test_S3EventRecordFromSNSWrapper(t *testing.T) {
 }
 
 func Test_S3EventRecordFromSNSWrapper_error_sns_record_count(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_message_s3.json")
+	b, err := os.ReadFile("testdata/valid_message_s3.json")
 	assert.NoError(t, err)
 
 	snsEvent := createSNSEvent(createSNSRecord(string(b)), createSNSRecord(string(b)))
@@ -58,7 +58,7 @@ func Test_S3EventRecordFromSNSWrapper_error_invalid_message(t *testing.T) {
 }
 
 func Test_S3EventRecordFromSNSWrapper_error_s3_Record_count(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/invalid_message_s3_count.json")
+	b, err := os.ReadFile("testdata/invalid_message_s3_count.json")
 	assert.NoError(t, err)
 
 	snsEvent := createSNSEvent(createSNSRecord(string(b)))
@@ -68,7 +68,7 @@ func Test_S3EventRecordFromSNSWrapper_error_s3_Record_count(t *testing.T) {
 }
 
 func TestUriFromSNSS3EventMessage(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_message_s3.json")
+	b, err := os.ReadFile("testdata/valid_message_s3.json")
 	assert.NoError(t, err)
 
 	snsEvent := createSNSEvent(createSNSRecord(string(b)))
@@ -79,7 +79,7 @@ func TestUriFromSNSS3EventMessage(t *testing.T) {
 }
 
 func TestUriFromSNSS3EventMessage_folder(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_message_s3_folder.json")
+	b, err := os.ReadFile("testdata/valid_message_s3_folder.json")
 	assert.NoError(t, err)
 
 	snsEvent := createSNSEvent(createSNSRecord(string(b)))
@@ -97,7 +97,7 @@ func TestUriFromSNSS3EventMessage_error(t *testing.T) {
 }
 
 func TestS3ObjectFromSNSS3EventMessage(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/valid_message_s3.json")
+	b, err := os.ReadFile("testdata/valid_message_s3.json")
 	assert.NoError(t, err)
 
 	snsEvent := createSNSEvent(createSNSRecord(string(b)))

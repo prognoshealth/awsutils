@@ -1,0 +1,18 @@
+{
+    "EventVersion": "1.0",
+    "EventSubscriptionArn": "arn:aws:sns:REGION:ACCOUNT_ID:SUBSCRIPTION_ID",
+    "EventSource": "aws:sns",
+    "Sns": {
+        "Signature": "SIGNATURE_PLACEHOLDER",
+        "MessageId": "MESSAGE_ID_PLACEHOLDER",
+        "Type": "Notification",
+        "TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:TOPIC_NAME",
+        "MessageAttributes": {},
+        "SignatureVersion": "1",
+        "Timestamp": "2024-09-12T12:00:00Z",
+        "SigningCertUrl": "CERT_URL_PLACEHOLDER",
+        "Message": "{\"Records\":[{\"eventVersion\":\"EVENT_VERSION_PLACEHOLDER\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"REGION_PLACEHOLDER\",\"eventTime\":\"2024-09-12T12:00:00Z\",\"eventName\":\"EVENT_NAME_PLACEHOLDER\",\"userIdentity\":{\"principalId\":\"PRINCIPAL_ID_PLACEHOLDER\"},\"requestParameters\":{\"sourceIPAddress\":\"IP_ADDRESS_PLACEHOLDER\"},\"responseElements\":{\"x-amz-request-id\":\"REQUEST_ID_PLACEHOLDER\",\"x-amz-id-2\":\"ID_2_PLACEHOLDER\"},\"s3\":{\"s3SchemaVersion\":\"VERSION_PLACEHOLDER\",\"configurationId\":\"CONFIGURATION_ID_PLACEHOLDER\",\"bucket\":{\"name\":\"BUCKET_NAME_PLACEHOLDER\",\"ownerIdentity\":{\"principalId\":\"OWNER_ID_PLACEHOLDER\"},\"arn\":\"arn:aws:s3:::BUCKET_ARN_PLACEHOLDER\"},\"object\":{\"key\":\"OBJECT_KEY_PLACEHOLDER\",\"size\":12345,\"eTag\":\"ETAG_PLACEHOLDER\",\"versionId\":\"VERSION_ID_PLACEHOLDER\",\"sequencer\":\"SEQUENCER_PLACEHOLDER\"}}}]}",
+        "UnsubscribeUrl": "UNSUBSCRIBE_URL_PLACEHOLDER",
+        "Subject": "SUBJECT_PLACEHOLDER"
+    }
+}

@@ -3,8 +3,8 @@ package proxy
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"reflect"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -37,7 +37,7 @@ func dummyNamespace(v interface{}) string {
 func dummy(v interface{}, category string) interface{} {
 	file := fmt.Sprintf("testdata/dummy/%s.%s.json", dummyNamespace(v), category)
 
-	content, err := ioutil.ReadFile(file)
+	content, err := os.ReadFile(file)
 	if err != nil {
 		log.Fatal(err)
 	}

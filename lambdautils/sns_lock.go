@@ -1,22 +1,26 @@
 package lambdautils
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
+
+// dynamoDBPutItemAPI is the minimal DynamoDB interface needed by SNSLock.
+type dynamoDBPutItemAPI interface {
+	PutItem(ctx context.Context, params *dynamodb.PutItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error)
+}
 
 // SNSLock manages locking of sns messages using dynamodb. The SNS messages are
 // locked using the hash of their message contents and the lock expires after
@@ -30,7 +34,7 @@ type SNSLock struct {
 	RetryWait int64  `json:"retry-wait"`
 
 	nowFunc  func() time.Time
-	svcFunc  func(client.ConfigProvider) dynamodbiface.DynamoDBAPI
+	svcFunc  func(aws.Config) dynamoDBPutItemAPI
 	hashFunc func(string) (string, error)
 }
 
@@ -57,8 +61,7 @@ func NewSNSLock(region string, table string, ttl int64, retry int64) *SNSLock {
 func NewSNSLockFromJson(s string) (*SNSLock, error) {
 	lock := new(SNSLock)
 
-	err := json.Unmarshal([]byte(s), lock)
-	if err != nil {
+	if err := json.Unmarshal([]byte(s), lock); err != nil {
 		return nil, err
 	}
 
@@ -81,29 +84,23 @@ func NewSNSLockFromJson(s string) (*SNSLock, error) {
 	return lock, nil
 }
 
-// now is used internally to assist stubs on time.Now() for testing
 func (lock *SNSLock) now() time.Time {
 	if lock.nowFunc != nil {
 		return lock.nowFunc()
 	}
-
 	return time.Now()
 }
 
-// svc is used internally to assist stubs on dynamodb for testing
-func (lock *SNSLock) svc(p client.ConfigProvider) dynamodbiface.DynamoDBAPI {
+func (lock *SNSLock) svc(cfg aws.Config) dynamoDBPutItemAPI {
 	if lock.svcFunc != nil {
-		return lock.svcFunc(p)
+		return lock.svcFunc(cfg)
 	}
-
-	return dynamodb.New(p)
+	return dynamodb.NewFromConfig(cfg)
 }
 
-// messageHash returns the sha256 of the message embedded in the sns event
 func (lock *SNSLock) messageHash(snsEvent events.SNSEvent) (string, error) {
 	message := snsEvent.Records[0].SNS.Message
 
-	// If a hash function is provided, use it
 	if lock.hashFunc != nil {
 		return lock.hashFunc(message)
 	}
@@ -112,39 +109,28 @@ func (lock *SNSLock) messageHash(snsEvent events.SNSEvent) (string, error) {
 	return fmt.Sprintf("%x", sum), nil
 }
 
-// expires returns the current time + ttl in Epoch format as a string
 func (lock *SNSLock) expires() string {
 	d := time.Duration(lock.TTL) * time.Second
 	t := lock.now().Add(d).Unix()
 	return strconv.FormatInt(t, 10)
 }
 
-// current returns the current time in Epoch format as a string
 func (lock *SNSLock) current() string {
 	return strconv.FormatInt(lock.now().Unix(), 10)
 }
 
-// putItemInput constructs the input for the given id insertion into dynamodb.
-// It applies a conditional expression that causes failures when the id has
-// already been added but not yet expired.
 func (lock *SNSLock) putItemInput(id string) *dynamodb.PutItemInput {
 	condition := "attribute_not_exists(id) OR :cur > expire"
 
 	return &dynamodb.PutItemInput{
-		Item: map[string]*dynamodb.AttributeValue{
-			"id": {
-				S: aws.String(id),
-			},
-			"expire": {
-				N: aws.String(lock.expires()),
-			},
+		Item: map[string]types.AttributeValue{
+			"id":     &types.AttributeValueMemberS{Value: id},
+			"expire": &types.AttributeValueMemberN{Value: lock.expires()},
 		},
 		TableName:           aws.String(lock.Table),
 		ConditionExpression: aws.String(condition),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":cur": {
-				N: aws.String(lock.current()),
-			},
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":cur": &types.AttributeValueMemberN{Value: lock.current()},
 		},
 	}
 }
@@ -153,28 +139,26 @@ func (lock *SNSLock) putItemInput(id string) *dynamodb.PutItemInput {
 // and it returns false if it is locked.
 //
 // Locked is defined as the record being in the configured dynamodb table and
-// not expires.
+// not expired.
 func (lock *SNSLock) AvailableById(id string) (bool, error) {
-	s, err := session.NewSession(&aws.Config{
-		Region: aws.String(lock.Region),
-	})
-
+	cfg, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion(lock.Region),
+	)
 	if err != nil {
-		return false, errors.Wrap(err, "failed getting session")
+		return false, fmt.Errorf("failed loading config: %w", err)
 	}
 
-	svc := lock.svc(s)
+	svc := lock.svc(cfg)
 	input := lock.putItemInput(id)
 
 	for attempts := 1; attempts <= 12; attempts++ {
-		_, err = svc.PutItem(input)
+		_, err = svc.PutItem(context.Background(), input)
 		if err == nil {
 			break
 		}
-		errString := err.Error()
-		if strings.Contains(errString, "connection reset by peer") {
+		if strings.Contains(err.Error(), "connection reset by peer") {
 			time.Sleep(time.Duration(lock.TTL) * time.Millisecond)
-			continue // retry
+			continue
 		}
 		break
 	}
@@ -183,19 +167,19 @@ func (lock *SNSLock) AvailableById(id string) (bool, error) {
 		return true, nil
 	}
 
-	aerr, ok := err.(awserr.Error)
-	if ok && aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+	var condErr *types.ConditionalCheckFailedException
+	if errors.As(err, &condErr) {
 		return false, nil
 	}
 
-	return false, errors.Wrapf(err, "failed put %v to %v", id, lock.Table)
+	return false, fmt.Errorf("failed put %v to %v: %w", id, lock.Table, err)
 }
 
 // Available returns true if the snsEvent is available for use (not locked) and
 // it returns false if it is locked.
 //
 // Locked is defined as the record being in the configured dynamodb table and
-// not expires.
+// not expired.
 func (lock *SNSLock) Available(snsEvent events.SNSEvent) (bool, error) {
 	if len(snsEvent.Records) != 1 {
 		return false, fmt.Errorf("expected only 1 SNS event, received: %v", len(snsEvent.Records))
@@ -203,7 +187,7 @@ func (lock *SNSLock) Available(snsEvent events.SNSEvent) (bool, error) {
 
 	id, err := lock.messageHash(snsEvent)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to hash message")
+		return false, fmt.Errorf("failed to hash message: %w", err)
 	}
 	return lock.AvailableById(id)
 }

@@ -26,15 +26,15 @@ func testRequest(method HttpMethod, path string) events.APIGatewayV2HTTPRequest 
 	}
 }
 
-func dummyNamespace(v interface{}) string {
-	if t := reflect.TypeOf(v); t.Kind() == reflect.Ptr {
+func dummyNamespace(v any) string {
+	if t := reflect.TypeOf(v); t.Kind() == reflect.Pointer {
 		return fmt.Sprintf("%s.p%s", t.Elem().PkgPath(), t.Elem().Name())
 	} else {
 		return fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
 	}
 }
 
-func dummy(v interface{}, category string) interface{} {
+func dummy(v any, category string) any {
 	file := fmt.Sprintf("testdata/dummy/%s.%s.json", dummyNamespace(v), category)
 
 	content, err := os.ReadFile(file)

@@ -1,6 +1,7 @@
 package lambdautils
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -9,13 +10,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
 )
 
 func TestNewSNSLock(t *testing.T) {
@@ -140,12 +138,10 @@ func TestSNSLock_messageHash_s3(t *testing.T) {
 
 	l := &SNSLock{}
 
-	// Set custom hash function for s3Event
 	l.SetHashFunc(func(message string) (string, error) {
 		var s3Event events.S3Event
-		err := json.Unmarshal([]byte(message), &s3Event)
-		if err != nil {
-			return "", errors.Wrap(err, "failed to unmarshal S3 event")
+		if err := json.Unmarshal([]byte(message), &s3Event); err != nil {
+			return "", fmt.Errorf("failed to unmarshal S3 event: %w", err)
 		}
 
 		if len(s3Event.Records) != 1 {
@@ -190,38 +186,32 @@ func TestSNSLock_putItemInput(t *testing.T) {
 
 	assert.Equal(t, "t1", *input.TableName)
 	assert.Equal(t, "attribute_not_exists(id) OR :cur > expire", *input.ConditionExpression)
-	assert.Equal(t, "1257894000", *input.ExpressionAttributeValues[":cur"].N)
-	assert.Equal(t, "1234", *input.Item["id"].S)
-	assert.Equal(t, "1257894900", *input.Item["expire"].N)
+	assert.Equal(t, "1257894000", input.ExpressionAttributeValues[":cur"].(*types.AttributeValueMemberN).Value)
+	assert.Equal(t, "1234", input.Item["id"].(*types.AttributeValueMemberS).Value)
+	assert.Equal(t, "1257894900", input.Item["expire"].(*types.AttributeValueMemberN).Value)
 }
 
-type successMockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
-}
+type successMockDynamoDBClient struct{}
 
-func (m *successMockDynamoDBClient) PutItem(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
+func (m *successMockDynamoDBClient) PutItem(_ context.Context, _ *dynamodb.PutItemInput, _ ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error) {
 	return nil, nil
 }
 
-type failedMockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
+type failedMockDynamoDBClient struct{}
+
+func (m *failedMockDynamoDBClient) PutItem(_ context.Context, _ *dynamodb.PutItemInput, _ ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error) {
+	return nil, &types.ConditionalCheckFailedException{}
 }
 
-func (m *failedMockDynamoDBClient) PutItem(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
-	return nil, awserr.New(dynamodb.ErrCodeConditionalCheckFailedException, "condition fail", errors.New("test fail"))
-}
+type errorMockDynamoDBClient struct{}
 
-type errorMockDynamoDBClient struct {
-	dynamodbiface.DynamoDBAPI
-}
-
-func (m *errorMockDynamoDBClient) PutItem(*dynamodb.PutItemInput) (*dynamodb.PutItemOutput, error) {
-	return nil, errors.New("test fail")
+func (m *errorMockDynamoDBClient) PutItem(_ context.Context, _ *dynamodb.PutItemInput, _ ...func(*dynamodb.Options)) (*dynamodb.PutItemOutput, error) {
+	return nil, fmt.Errorf("test fail")
 }
 
 func TestSNSLock_AvailableById(t *testing.T) {
 	l := &SNSLock{Region: "r1", Table: "t1", TTL: 900}
-	l.svcFunc = func(client.ConfigProvider) dynamodbiface.DynamoDBAPI { return &successMockDynamoDBClient{} }
+	l.svcFunc = func(aws.Config) dynamoDBPutItemAPI { return &successMockDynamoDBClient{} }
 
 	available, err := l.AvailableById("1234")
 	assert.NoError(t, err)
@@ -230,7 +220,7 @@ func TestSNSLock_AvailableById(t *testing.T) {
 
 func TestSNSLock_AvailableById_nope(t *testing.T) {
 	l := &SNSLock{Region: "r1", Table: "t1", TTL: 900}
-	l.svcFunc = func(client.ConfigProvider) dynamodbiface.DynamoDBAPI { return &failedMockDynamoDBClient{} }
+	l.svcFunc = func(aws.Config) dynamoDBPutItemAPI { return &failedMockDynamoDBClient{} }
 
 	available, err := l.AvailableById("1234")
 	assert.NoError(t, err)
@@ -239,7 +229,7 @@ func TestSNSLock_AvailableById_nope(t *testing.T) {
 
 func TestSNSLock_AvailableById_error(t *testing.T) {
 	l := &SNSLock{Region: "r1", Table: "t1", TTL: 900}
-	l.svcFunc = func(client.ConfigProvider) dynamodbiface.DynamoDBAPI { return &errorMockDynamoDBClient{} }
+	l.svcFunc = func(aws.Config) dynamoDBPutItemAPI { return &errorMockDynamoDBClient{} }
 
 	_, err := l.AvailableById("1234")
 	assert.Error(t, err)
@@ -259,7 +249,7 @@ func TestSNSLock_Available(t *testing.T) {
 	}
 
 	l := &SNSLock{Region: "r1", Table: "t1", TTL: 900}
-	l.svcFunc = func(client.ConfigProvider) dynamodbiface.DynamoDBAPI { return &successMockDynamoDBClient{} }
+	l.svcFunc = func(aws.Config) dynamoDBPutItemAPI { return &successMockDynamoDBClient{} }
 
 	available, err := l.Available(snsEvent)
 	assert.NoError(t, err)
@@ -281,7 +271,7 @@ func TestSNSLock_Available_errorRecords(t *testing.T) {
 	}
 
 	l := &SNSLock{Region: "r1", Table: "t1", TTL: 900}
-	l.svcFunc = func(client.ConfigProvider) dynamodbiface.DynamoDBAPI { return &successMockDynamoDBClient{} }
+	l.svcFunc = func(aws.Config) dynamoDBPutItemAPI { return &successMockDynamoDBClient{} }
 
 	_, err = l.Available(snsEvent)
 	assert.Error(t, err)

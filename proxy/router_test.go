@@ -83,7 +83,7 @@ func TestRouter_AddRouteIfNoError(t *testing.T) {
 	assert.Equal(t, "GET ^/yolo/?$", r.Routes[0].String())
 
 	err := r.BuildErrors()
-	assert.Equal(t, "failed compiling regex pattern 'asom (?<in-invalid>.*)': error parsing regexp: invalid or unsupported Perl syntax: `(?<`: failed building router", err.Error())
+	assert.Equal(t, "failed compiling regex pattern 'asom (?<in-invalid>.*)': error parsing regexp: invalid named capture: `(?<in-invalid>`: failed building router", err.Error())
 }
 
 func TestRouter_ConvenienceMethods(t *testing.T) {

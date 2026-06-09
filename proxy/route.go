@@ -136,13 +136,13 @@ func (route *Route) extractParamsFromFormPost(params map[string]string, request 
 // The 'Params' that get set on the context are extracted from the request with
 // the following precedence:
 //
-//	1) Form POSTs
-//  2) Route defined regex capture
-//  3) Query string
-//  4) AWS API Gateway configured PathParameters.
+//  1. Form POSTs
+//  2. Route defined regex capture
+//  3. Query string
+//  4. AWS API Gateway configured PathParameters.
 func (route *Route) Context(ctx context.Context, request events.APIGatewayV2HTTPRequest, groups []string) (*RouteContext, error) {
 	if len(groups) == 0 {
-		return nil, fmt.Errorf("No matches available, unabled to generate context for route %v", route)
+		return nil, fmt.Errorf("no matches available, unabled to generate context for route %v", route)
 	}
 
 	params := make(map[string]string)
